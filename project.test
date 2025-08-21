@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Live Recognizer – Teachable Machine</title>
+
+  <!-- 1) TensorFlow.js (must load first) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+
+  <!-- 2) Teachable Machine Image Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    h1 {
+      margin: 20px 0;
+    }
+    #webcam-container {
+      margin: 20px auto;
+    }
+    #label-container div {
+      background: white;
+      margin: 5px auto;
+      padding: 8px;
+      width: 220px;
+      border-radius: 5px;
+      font-size: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #007bff;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>Live Recognizer – Your Model</h1>
+
+  <button onclick="init()">Start</button>
+  <div id="webcam-container"></div>
+  <div id="label-container"></div>
+
+  <script>
+    //  Your new shareable link from Teachable Machine
+    const URL = "https://teachablemachine.withgoogle.com/models/K_5lBAkoA/";
+
+    let model, webcam, labelContainer, maxPredictions;
+
+    async function init() {
+      try {
+        model = await tmImage.load(URL + "model.json", URL + "metadata.json");
+        maxPredictions = model.getTotalClasses();
+
+        const flip = true;
+        webcam = new tmImage.Webcam(300, 300, flip);
+        await webcam.setup();
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+
+        labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = "";
+        for (let i = 0; i < maxPredictions; i++) {
+          labelContainer.appendChild(document.createElement("div"));
+        }
+      } catch (err) {
+        console.error("Error initializing model:", err);
+        alert("Initialization failed. Check console for details.");
+      }
+    }
+
+    async function loop() {
+      webcam.update();
+      await predict();
+      window.requestAnimationFrame(loop);
+    }
+
+    async function predict() {
+      const prediction = await model.predict(webcam.canvas);
+      prediction.forEach((p, i) => {
+        labelContainer.childNodes[i].innerText = `${p.className}: ${p.probability.toFixed(2)}`;
+      });
+    }
+  </script>
+</body>
+</html>
